@@ -4,11 +4,9 @@ import config
 
 
 class FairSupConLoss(nn.Module):
-    """
-    有 sensitives 时：正对 = same target & different sensitive（跨组对比，迫使表征忽略 sensitive 信息）。
-    无 sensitives 时：正对 = same target（普通 SupCon，用于 baseline 对比）。
-    """
-
+    # 有 sensitives 时：正对 = same target & different sensitive（跨组对比，迫使表征忽略 sensitive 信息）。
+    # 无 sensitives 时：正对 = same target（普通 SupCon，用于 baseline 对比）。
+    
     def __init__(self, temperature=config.TEMPERATURE):
         super().__init__()
         self.t = temperature
