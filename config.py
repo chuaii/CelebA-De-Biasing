@@ -10,8 +10,7 @@ TARGET_ATTR = "Blond_Hair"
 SENSITIVE_ATTR = "Male"
 
 # group = target * 2 + sensitive
-GROUP_NAMES = {0: "NonBlond_Female", 1: "NonBlond_Male",
-               2: "Blond_Female", 3: "Blond_Male"}
+GROUP_NAMES = {0: "NonBlond_Female", 1: "NonBlond_Male", 2: "Blond_Female", 3: "Blond_Male"}
 
 BATCH_SIZE = 128
 NUM_WORKERS = 4
@@ -22,7 +21,6 @@ WD = 1e-4
 EMBED_DIM = 128
 TEMPERATURE = 0.07
 LAMBDA_CON = 0.2  # 0 = baseline, >0 = debias
-PATIENCE = 7
 
 DEVICE = "cuda"
 SEED = 42
