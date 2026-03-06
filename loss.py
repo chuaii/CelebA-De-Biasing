@@ -19,7 +19,7 @@ class FairSupConLoss(nn.Module):
             return torch.tensor(0.0, device=embeddings.device)
 
         sim = embeddings @ embeddings.T / self.t
-        self_mask = torch.eye(B, device=embeddings.device)
+        non_self = 1.0 - torch.eye(B, device=embeddings.device)
 
         targets = targets.view(-1, 1)
         same_target = (targets == targets.T).float()
@@ -27,14 +27,15 @@ class FairSupConLoss(nn.Module):
         if sensitives is not None:
             sensitives = sensitives.view(-1, 1)
             diff_sens = (sensitives != sensitives.T).float()
-            pos_mask = same_target * diff_sens
+            pos_mask = same_target * diff_sens * non_self
+            # D(i) = P_Fair(i) ∪ N(i); exclude same-target-same-sensitive
+            denom_mask = non_self * (1.0 - same_target * (1.0 - diff_sens))
         else:
-            pos_mask = same_target - self_mask
-
-        pos_mask = pos_mask * (1.0 - self_mask)
+            pos_mask = same_target * non_self
+            denom_mask = non_self
 
         sim = sim - sim.detach().max(dim=1, keepdim=True).values
-        exp_sim = torch.exp(sim) * (1.0 - self_mask)
+        exp_sim = torch.exp(sim) * denom_mask
         log_prob = sim - torch.log(exp_sim.sum(dim=1, keepdim=True) + 1e-8)
 
         num_pos = pos_mask.sum(dim=1)
