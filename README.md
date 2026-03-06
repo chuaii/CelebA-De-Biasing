@@ -1,48 +1,56 @@
-# Fair Classification on CelebA
-## Problem
+# Fair Classification on CelebA — Q1 Action Plan
 
-Predict `Blond_Hair` on CelebA while mitigating gender bias. The **Blond_Male** group is only **0.85%** of training data, causing standard ERM to fail on this minority group. Primary metric: **Worst-Group Accuracy (WGA)**.
+## 1. De-biasing Method
 
-| Group | Target | Sensitive | Samples | Proportion |
-|-------|--------|-----------|---------|------------|
-| NonBlond_Female | Non-Blond | Female | 71,629 | 44.0% |
-| NonBlond_Male | Non-Blond | Male | 66,874 | 41.1% |
-| Blond_Female | Blond | Female | 22,880 | 14.1% |
-| **Blond_Male** | **Blond** | **Male** | **1,387** | **0.85%** |
+**Task:** Predict `Blond_Hair` on CelebA. The **Blond_Male** group is only **0.85 %** of training data, causing ERM to learn a spurious *"blond ≈ female"* shortcut.
 
-## De-biasing Method — Progressive Ablation
-| | Sampling | Loss | Addresses |
-|--|----------|------|-----------|
-| **Baseline** | Uniform | CrossEntropy | — (control) |
-| **+ Resampling** | Group-balanced | CrossEntropy | Data imbalance |
-| **+ FairSupCon** | Group-balanced | CrossEntropy + λ·FairSupCon | Feature entanglement |
+**Method:** Fair Supervised Contrastive Learning (FairSupCon) + group-balanced resampling, with progressive ablation to isolate each component's contribution. Group DRO (Sagawa et al., ICLR 2020) as external baseline.
 
-Each level builds on the previous. FairSupCon pulls **cross-gender positive pairs** (e.g. Blond_Female ↔ Blond_Male) together in embedding space, forcing the model to decouple gender from hair-color.
+| Stage | Sampling | Loss | Addresses |
+|-------|----------|------|-----------|
+| **Baseline (ERM)** | Uniform | CE | — (control) |
+| **+ Resampling** | Group-balanced | CE | Data imbalance |
+| **+ FairSupCon** | Group-balanced | CE + λ · FairSupCon | Feature entanglement |
 
-Additionally compared against **Group DRO** (Sagawa et al., ICLR 2020) as an external baseline.
+## 2. Formulation
 
-## Responsibilities
+**Architecture.** ResNet-18 backbone → projection head $\mathbf{z}_i = \text{normalize}(\text{MLP}(\mathbf{h}_i))$ for contrastive loss + classification head for CE loss.
 
-| Member | Task |
-|--------|------|
-| `Vaibhav` | Baseline (ERM), external baseline (Group DRO) |
-| `Vaibhav` | + Group-balanced resampling |
-| `Huayi, Matthew` | + FairSupCon loss |
+**Positive pairs.** Same target, different sensitive attribute — forcing gender-invariant representations:
 
-## Timeline
+$$\mathcal{P}(i) = \bigl\{\, j \neq i \;\big|\; y_j = y_i \;\wedge\; s_j \neq s_i \,\bigr\}$$
+
+**FairSupCon loss** ($\tau$ = temperature):
+
+$$\mathcal{L}_{\text{FSC}} = -\frac{1}{|\mathcal{B}|}\sum_{i \in \mathcal{B}} \frac{1}{|\mathcal{P}(i)|} \sum_{j \in \mathcal{P}(i)} \log \frac{\exp(\mathbf{z}_i \cdot \mathbf{z}_j / \tau)}{\sum_{k \neq i} \exp(\mathbf{z}_i \cdot \mathbf{z}_k / \tau)}$$
+
+**Total objective:**
+
+$$\mathcal{L} = \mathcal{L}_{\text{CE}} + \lambda \cdot \mathcal{L}_{\text{FSC}}$$
+
+## 3. Experiment Design
+
+| Comparison | Purpose |
+|------------|---------|
+| ERM vs. ERM + Resampling | Quantify effect of balancing alone |
+| ERM + Resampling vs. + FairSupCon | Quantify effect of contrastive de-biasing |
+| FairSupCon vs. Group DRO | Compare against established de-biasing method |
+
+**Primary metric:** Worst-Group Accuracy (WGA) = $\min_g \text{Acc}_g$. Supplementary: DPD, EOD, Equalized Odds.
+
+## 4. Responsibilities
+
+| Member | Responsibility |
+|--------|----------------|
+| **Vaibhav** | Baseline ERM; Group DRO baseline; resampling |
+| **Huayi** | FairSupCon loss design & implementation; fairness evaluation |
+| **Matthew** | FairSupCon integration & tuning; ablation experiments |
+
+## 5. Timeline & Milestones
 
 | Date | Milestone |
 |------|-----------|
-| **Mar 6 (Q1)** | Problem defined; action plan ready |
-| **Mar 13 (Q2)** | Code pipeline working; Baseline results available |
-| **Mar 27 (Q3)** | All methods compared; ablation analysis complete |
-
-<!-- ## Usage
-
-```bash
-pip install -r requirements.txt
-python train.py --mode baseline    # Baseline
-python train.py --mode debias      # Resampling + FairSupCon
-python train_groupdro.py           # Group DRO
-python eval.py --checkpoint checkpoints/best_debias.pt --split test
-``` -->
+| **Mar 6 (Q1)** | Problem defined; action plan finalized |
+| **Mar 13 (Q2)** | Pipeline working; baseline + FairSupCon initial results |
+| **Mar 20** | Hyperparameter sweep; ablation analysis |
+| **Mar 27 (Q3)** | Full comparison; fairness evaluation; final report |
