@@ -18,7 +18,7 @@
 
 **Positive pairs.** Same target, different sensitive attribute — forcing gender-invariant representations:
 
-$$\mathcal{P}(i) = \left\lbrace\, j \neq i \;\middle|\; y_j = y_i \;\wedge\; s_j \neq s_i \,\right\rbrace$$
+$$\mathcal{P}(i) = \left\lbrace j \neq i \mid y_j = y_i \wedge s_j \neq s_i \right\rbrace$$
 
 **FairSupCon loss** ($\tau$ = temperature):
 
