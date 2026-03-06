@@ -67,7 +67,7 @@ $$\mathcal{L}\_{\text{total}} = \mathcal{L}\_{\text{CE}} + \lambda \cdot \mathca
 | ERM + Resampling vs. + FairSupCon | See what contrastive de-biasing adds on top    |
 | FairSupCon vs. Group DRO          | Compare with a well-known de-biasing method    |
 
-**Main metric:** Worst-Group Accuracy (WGA) = $\min_g \text{Acc}_g$. Also report DPD, EOD, Equalized Odds.
+**Main metric:** Worst-Group Accuracy (WGA) = $\min \text{Acc}_g$.
 
 ## 4. Responsibilities
 
