@@ -2,93 +2,82 @@
 
 ## 1. De-biasing Method
 
-**Task:** Predict `Blond_Hair` on CelebA. The **Blond_Male** group is only **0.85 %** of training data, causing ERM to learn a spurious *"blond ≈ female"* shortcut.
+**Task:** Predict `Blond_Hair` on CelebA. **Blond_Male** is only **0.85 %** of training data, so ERM learns a shortcut: *"blond ≈ female"*.
 
-**Method:** Fair Supervised Contrastive Learning (FairSupCon) + group-balanced resampling, with progressive ablation to isolate each component's contribution. Group DRO (Sagawa et al., ICLR 2020) as external baseline.
+**Method:** FairSupCon + group-balanced resampling, with ablation to see what each part does. Group DRO (Sagawa et al., ICLR 2020) as baseline.
 
-
-| Stage              | Sampling       | Loss                | Addresses            |
+| Stage              | Sampling       | Loss                | What it fixes        |
 | ------------------ | -------------- | ------------------- | -------------------- |
 | **Baseline (ERM)** | Uniform        | CE                  | — (control)          |
 | **+ Resampling**   | Group-balanced | CE                  | Data imbalance       |
 | **+ FairSupCon**   | Group-balanced | CE + λ · FairSupCon | Feature entanglement |
 
-
 ## 2. Formulation
 
-### 2.1 Background — Supervised Contrastive Learning
+### 2.1 Background — SupCon
 
-Supervised Contrastive Learning (SupCon, Khosla et al., NeurIPS 2020) extends self-supervised contrastive learning by using label information to define positive pairs. For anchor $i$, all samples sharing the same label form positive pairs:
+SupCon (Khosla et al., NeurIPS 2020) uses labels to pick positive pairs. For anchor $i$, any sample with the same label is a positive:
 
-$$\mathcal{P}_{\text{SupCon}}(i) = \left\lbrace j \neq i \mid y_j = y_i \right\rbrace$$
+$$\mathcal{P}\_{\text{SupCon}}(i) = \left\lbrace i \neq j \mid y\_i = y\_j \right\rbrace$$
 
-$$\mathcal{L}*{\text{SupCon}} = -\frac{1}{|\mathcal{B}|}\sum*{i \in \mathcal{B}} \frac{1}{|\mathcal{P}(i)|} \sum_{j \in \mathcal{P}(i)} \log \frac{\exp(\text{sim}(i,j) / \tau)}{\sum_{k \neq i} \exp(\text{sim}(i,k) / \tau)}$$
+$$\mathcal{L}\_{\text{SupCon}} = -\frac{1}{|\mathcal{B}|}\sum\_{i \in \mathcal{B}} \frac{1}{|\mathcal{P}\_{\text{SupCon}}(i)|} \sum\_{j \in \mathcal{P}\_{\text{SupCon}}(i)} \log \frac{\exp(\text{sim}(i,j) / \tau)}{\sum\_{k \neq i} \exp(\text{sim}(i,k) / \tau)}$$
 
-where $\text{sim}(i,j) = \mathbf{z}_i \cdot \mathbf{z}_j$ is cosine similarity between L2-normalized embeddings. This objective pulls same-class samples together and pushes different-class samples apart in embedding space.
+where $\text{sim}(i,j) = \mathbf{z}\_i \cdot \mathbf{z}\_j$ (cosine similarity, L2-normalized). Same-class pulled closer, different-class pushed apart.
 
-**Problem:** Standard SupCon treats all same-label pairs equally. In a biased dataset like CelebA, Blond samples are overwhelmingly female, so SupCon still clusters by *gender* rather than by *hair color*.
+**Problem:** SupCon treats all same-label pairs equally. Most Blond samples are female, so it clusters by *gender* not *hair color*.
 
-### 2.2 Our Method — FairSupCon Loss
+### 2.2 FairSupCon Loss
 
-We modify the positive-pair definition to **only** pair samples with the same target label but **different** sensitive attributes:
+We only pair samples with **same label but different sensitive attribute**:
 
-$$\mathcal{P}_{\text{Fair}}(i) = \left\lbrace i \neq j \mid y_i = y_j \wedge s_i \neq s_j \right\rbrace$$
+$$\mathcal{P}\_{\text{Fair}}(i) = \left\lbrace i \neq j \mid y\_i = y\_j \wedge s\_i \neq s\_j \right\rbrace$$
 
-For example, a BlondFemale ($y=1, s=0$) is only paired with BlondMale ($y=1, s=1$), never with another BlondFemale. This forces the encoder to learn hair-color features that are invariant to gender.
+e.g. Blond\_Female ( $y=1, s=0$ ) only pairs with Blond\_Male ( $y=1, s=1$ ), never another Blond\_Female. This forces the encoder to learn hair-color features instead of gender.
 
-The loss takes the same functional form as SupCon, but with the modified positive set:
+But if we keep the standard denominator, same-class same-attribute samples get pushed apart, which breaks clustering. So we fix the denominator too.
 
-$$\mathcal{L}*{\text{FSC}} = - \frac{1}{|\mathcal{B}|} \sum*{i \in \mathcal{B}} \frac{1}{|\mathcal{P}*{\text{Fair}}(i)|} \sum*{j \in \mathcal{P}_{\text{Fair}}(i)} \log \frac{\exp(\mathbf{z}_i \cdot \mathbf{z}*j / \tau)}{\sum*{k \neq i} \exp(\mathbf{z}_i \cdot \mathbf{z}_k / \tau)}$$
+Negative set — everything with a different label:
 
-where $\mathcal{B}$ is the set of anchors that have at least one valid positive pair in the mini-batch.
+$$\mathcal{N}(i) = \left\lbrace k \mid y\_k \neq y\_i \right\rbrace$$
 
-**Architecture.** ResNet-18 backbone produces feature $\mathbf{h}_i$, which branches into:
+Denominator set — union of cross-attribute positives and negatives:
 
-- **Projection head:** $\mathbf{z}_i = \text{normalize}(\text{MLP}(\mathbf{h}*i)) \in \mathbb{R}^{d}$ — used by $\mathcal{L}*{\text{FSC}}$
-- **Classification head:** $\hat{y}_i = \text{Linear}(\mathbf{h}*i)$ — used by $\mathcal{L}*{\text{CE}}$
+$$\mathcal{D}(i) = \mathcal{P}\_{\text{Fair}}(i) \cup \mathcal{N}(i)$$
 
-### 2.3 Total Objective & Hyperparameters
+Same-label same-attribute samples ( $y\_k = y\_i \wedge s\_k = s\_i$ ) are left out of $\mathcal{D}(i)$ — not pulled, not pushed, they just cluster on their own.
 
-$$\mathcal{L}*{\text{total}} = \mathcal{L}*{\text{CE}} + \lambda \cdot \mathcal{L}_{\text{FSC}}$$
+$$\mathcal{L}\_{\text{FSC}} = - \frac{1}{|\mathcal{B}|} \sum\_{i \in \mathcal{B}} \frac{1}{|\mathcal{P}\_{\text{Fair}}(i)|} \sum\_{j \in \mathcal{P}\_{\text{Fair}}(i)} \log \frac{\exp(\mathbf{z}\_i \cdot \mathbf{z}\_j / \tau)}{\sum\_{k \in \mathcal{D}(i)} \exp(\mathbf{z}\_i \cdot \mathbf{z}\_k / \tau)}$$
 
+### 2.3 Total Loss & Hyperparameters
 
-| Symbol                 | Meaning                                                                      | Value                |
-| ---------------------- | ---------------------------------------------------------------------------- | -------------------- |
-| $\lambda$              | Weight of FairSupCon loss                                                    | 0.2 (0 for baseline) |
-| $\tau$                 | Temperature (sharpness of similarity distribution)                           | 0.07                 |
-| $d$                    | Projection embedding dimension                                               | 128                  |
-| $B$                    | Batch size                                                                   | 128                  |
-| $lr_{\text{head}}$     | Learning rate for projection + classifier heads                              | 1e-4                 |
-| $lr_{\text{backbone}}$ | Learning rate for ResNet-18 backbone (lower to preserve pretrained features) | 1e-5                 |
-| $wd$                   | Weight decay                                                                 | 1e-4                 |
-| —                      | Epochs                                                                       | 20                   |
-| —                      | LR scheduler                                                                 | Cosine Annealing     |
+$$\mathcal{L}\_{\text{total}} = \mathcal{L}\_{\text{CE}} + \lambda \cdot \mathcal{L}\_{\text{FSC}}$$
 
+| Symbol    | What it is                     | Value                |
+| --------- | ------------------------------ | -------------------- |
+| $\lambda$ | FairSupCon weight              | 0.2 (0 for baseline) |
+| $\tau$    | Temperature                    | 0.07                 |
+| $d$       | Projection head output dim     | 128                  |
+| $B$       | Batch size                     | 128                  |
 
 ## 3. Experiment Design
 
-
-| Comparison                        | Purpose                                       |
+| Comparison                        | Why                                           |
 | --------------------------------- | --------------------------------------------- |
-| ERM vs. ERM + Resampling          | Quantify effect of balancing alone            |
-| ERM + Resampling vs. + FairSupCon | Quantify effect of contrastive de-biasing     |
-| FairSupCon vs. Group DRO          | Compare against established de-biasing method |
+| ERM vs. ERM + Resampling          | See how much balancing alone helps             |
+| ERM + Resampling vs. + FairSupCon | See what contrastive de-biasing adds on top    |
+| FairSupCon vs. Group DRO          | Compare with a well-known de-biasing method    |
 
-
-**Primary metric:** Worst-Group Accuracy (WGA) = $\min_g \text{Acc}_g$. Supplementary: DPD, EOD, Equalized Odds.
+**Main metric:** Worst-Group Accuracy (WGA) = $\min_g \text{Acc}_g$. Also report DPD, EOD, Equalized Odds.
 
 ## 4. Responsibilities
 
-
-| Member      | Responsibility                                               |
+| Member      | What they're doing                                           |
 | ----------- | ------------------------------------------------------------ |
 | **Vaibhav** | Baseline ERM; Group DRO baseline; resampling                 |
 | **Huayi**   | FairSupCon loss design & implementation; fairness evaluation |
 | **Matthew** | FairSupCon integration & tuning; ablation experiments        |
 
-
 ## 5. Timeline & Milestones
-
 
 | Date            | Milestone                                               |
 | --------------- | ------------------------------------------------------- |
@@ -96,5 +85,3 @@ $$\mathcal{L}*{\text{total}} = \mathcal{L}*{\text{CE}} + \lambda \cdot \mathcal{
 | **Mar 13 (Q2)** | Pipeline working; baseline + FairSupCon initial results |
 | **Mar 20**      | Hyperparameter sweep; ablation analysis                 |
 | **Mar 27 (Q3)** | Full comparison; fairness evaluation; final report      |
-
-
