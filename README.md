@@ -36,11 +36,11 @@ This design is called **factorial ablation**.
 
 SupCon (Khosla et al., NeurIPS 2020) uses labels to pick positive pairs. For anchor $i$, any sample with the same label is a positive:
 
-$$\mathcal{P}\_{\text{SupCon}}(i) = \left\lbrace i \neq j \mid y\_i = y\_j \right\rbrace$$
+$$\mathcal{P}_{\text{SupCon}}(i) = \left\lbrace i \neq j \mid y_i = y_j \right\rbrace$$
 
-$$\mathcal{L}\_{\text{SupCon}} = -\frac{1}{|\mathcal{B}|}\sum\_{i \in \mathcal{B}} \frac{1}{|\mathcal{P}\_{\text{SupCon}}(i)|} \sum\_{j \in \mathcal{P}\_{\text{SupCon}}(i)} \log \frac{\exp(\text{sim}(i,j) / \tau)}{\sum\_{k \neq i} \exp(\text{sim}(i,k) / \tau)}$$
+$$\mathcal{L}_{\text{SupCon}} = -\frac{1}{|\mathcal{B}|}\sum_{i \in \mathcal{B}} \frac{1}{|\mathcal{P}_{\text{SupCon}}(i)|} \sum_{j \in \mathcal{P}_{\text{SupCon}}(i)} \log \frac{\exp(\text{sim}(i,j) / \tau)}{\sum_{k \neq i} \exp(\text{sim}(i,k) / \tau)}$$
 
-where $\text{sim}(i,j) = \mathbf{z}\_i \cdot \mathbf{z}\_j$ (cosine similarity, L2-normalized). Same-class pulled closer, different-class pushed apart.
+where $\text{sim}(i,j) = \mathbf{z}_i \cdot \mathbf{z}_j$ (cosine similarity, L2-normalized). Same-class pulled closer, different-class pushed apart.
 
 **Problem:** SupCon treats all same-label pairs equally. Most Blond samples are female, so it clusters by *gender* not *hair color*.
 
@@ -48,27 +48,27 @@ where $\text{sim}(i,j) = \mathbf{z}\_i \cdot \mathbf{z}\_j$ (cosine similarity, 
 
 We only pair samples with **same label but different sensitive attribute**:
 
-$$\mathcal{P}\_{\text{Fair}}(i) = \left\lbrace i \neq j \mid y\_i = y\_j \wedge s\_i \neq s\_j \right\rbrace$$
+$$\mathcal{P}_{\text{Fair}}(i) = \left\lbrace i \neq j \mid y_i = y_j \wedge s_i \neq s_j \right\rbrace$$
 
-e.g. Blond\_Female ( $y=1, s=0$ ) only pairs with Blond\_Male ( $y=1, s=1$ ), never another Blond\_Female. This forces the encoder to learn hair-color features instead of gender.
+e.g. Blond_Female ( $y=1, s=0$ ) only pairs with Blond\_Male ( $y=1, s=1$ ), never another Blond\_Female. This forces the encoder to learn hair-color features instead of gender.
 
 But if we keep the standard denominator, same-class same-attribute samples get pushed apart, which breaks clustering. So we fix the denominator too.
 
 Negative set — everything with a different label:
 
-$$\mathcal{N}(i) = \left\lbrace k \mid y\_k \neq y\_i \right\rbrace$$
+$$\mathcal{N}(i) = \left\lbrace k \mid y_k \neq y_i \right\rbrace$$
 
 Denominator set — union of cross-attribute positives and negatives:
 
-$$\mathcal{D}(i) = \mathcal{P}\_{\text{Fair}}(i) \cup \mathcal{N}(i)$$
+$$\mathcal{D}(i) = \mathcal{P}_{\text{Fair}}(i) \cup \mathcal{N}(i)$$
 
-Same-label same-attribute samples ( $y\_k = y\_i \wedge s\_k = s\_i$ ) are left out of $\mathcal{D}(i)$ — not pulled, not pushed, they just cluster on their own.
+Same-label same-attribute samples ( $y_k = y_i \wedge s_k = s_i$ ) are left out of $\mathcal{D}(i)$ — not pulled, not pushed, they just cluster on their own.
 
-$$\mathcal{L}\_{\text{FSC}} = - \frac{1}{|\mathcal{B}|} \sum\_{i \in \mathcal{B}} \frac{1}{|\mathcal{P}\_{\text{Fair}}(i)|} \sum\_{j \in \mathcal{P}\_{\text{Fair}}(i)} \log \frac{\exp(\mathbf{z}\_i \cdot \mathbf{z}\_j / \tau)}{\sum\_{k \in \mathcal{D}(i)} \exp(\mathbf{z}\_i \cdot \mathbf{z}\_k / \tau)}$$
+$$\mathcal{L}_{\text{FSC}} = - \frac{1}{|\mathcal{B}|} \sum_{i \in \mathcal{B}} \frac{1}{|\mathcal{P}_{\text{Fair}}(i)|} \sum_{j \in \mathcal{P}_{\text{Fair}}(i)} \log \frac{\exp(\mathbf{z}_i \cdot \mathbf{z}_j / \tau)}{\sum_{k \in \mathcal{D}(i)} \exp(\mathbf{z}_i \cdot \mathbf{z}_k / \tau)}$$
 
 ### 2.3 Total Loss & Hyperparameters
 
-$$\mathcal{L}\_{\text{total}} = \mathcal{L}\_{\text{CE}} + \lambda \cdot \mathcal{L}\_{\text{FSC}}$$
+$$\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{CE}} + \lambda \cdot \mathcal{L}_{\text{FSC}}$$
 
 | Symbol    | What it is                     | Value                |
 | --------- | ------------------------------ | -------------------- |
