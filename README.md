@@ -4,13 +4,31 @@
 
 **Task:** Predict `Blond_Hair` on CelebA. **Blond_Male** is only **0.85 %** of training data, so ERM learns a shortcut: *"blond ≈ female"*.
 
-**Method:** FairSupCon + group-balanced resampling, with ablation to see what each part does. Group DRO (Sagawa et al., ICLR 2020) as baseline.
+**Method:** FairSupCon + group-balanced resampling, with ablation to see what each part does. Group DRO (Sagawa et al., ICLR 2020) as other SOTA.
 
-| Stage              | Sampling       | Loss                | What it fixes        |
-| ------------------ | -------------- | ------------------- | -------------------- |
-| **Baseline (ERM)** | Uniform        | CE                  | — (control)          |
-| **+ Resampling**   | Group-balanced | CE                  | Data imbalance       |
-| **+ FairSupCon**   | Group-balanced | CE + λ · FairSupCon | Feature entanglement |
+| Stage | **Method**              | **Sampling**   | **Loss**   | **What it fixes?**                  |
+| ----- | ----------------------- | -------------- | ---------- | ---------------------------------- |
+| ①     | ERM                     | Uniform        | CE         | Baseline，expose shortcut           |
+| ②     | + Resampling            | Group-balanced | CE         | By based on data level             |
+| ③     | + FairSupCon            | Uniform        | CE + λ·FSC | By based on representational level |
+| ④     | Resampling + FairSupCon | Group-balanced | CE + λ·FSC | Combine together                   |
+| ⑤     | vs Group DRO            | Uniform        | DRO        | Compared to other SOTA             |
+
+
+This is a **2×2 ablation Matrix**：
+
+|                  | **不 Resampling**   | **Resampling**     |
+| ---------------- | ------------------ | ------------------ |
+| **不 FairSupCon** | ① ERM              | ② ERM + Resampling |
+| **FairSupCon**   | ③ ERM + FairSupCon | ④ **Final Method** |
+
+
+This design is called **factorial ablation**.
+
+**Expected**: 
+
+*① ERM ≪ ③ FairSupCon only < ② Resampling only < ④ Combined ≈ or > ⑤ Group DRO*
+
 
 ## 2. Formulation
 
