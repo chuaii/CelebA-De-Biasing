@@ -10,19 +10,18 @@ TARGET_ATTR = "Blond_Hair"
 SENSITIVE_ATTR = "Male"
 
 # group = target * 2 + sensitive
-GROUP_NAMES = {0: "NonBlond_Female", 1: "NonBlond_Male",
-               2: "Blond_Female", 3: "Blond_Male"}
+GROUP_NAMES = {0: "NonBlond_Female", 1: "NonBlond_Male", 2: "Blond_Female", 3: "Blond_Male"}
 
 BATCH_SIZE = 128
 NUM_WORKERS = 4
-NUM_EPOCHS = 20
-LR = 1e-4
-LR_BACKBONE = 1e-5
+NUM_EPOCHS = 10
+WARMUP_EPOCHS = 2  # 前 N 个 epoch 线性 warmup，0 表示不做 warmup
+LR = 1e-5
+LR_BACKBONE = 1e-6
 WD = 1e-4
 EMBED_DIM = 128
-TEMPERATURE = 0.07
-LAMBDA_CON = 0.2  # 0 = baseline, >0 = debias
-PATIENCE = 7
+TEMPERATURE = 0.07 # SupCon default: 0.07
+LAMBDA_CON = 1.5  # 0 = baseline, >0 = debias
 
 DEVICE = "cuda"
 SEED = 42
