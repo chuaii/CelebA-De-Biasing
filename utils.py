@@ -27,17 +27,6 @@ def log_epoch(ep, total_epochs, loss, metrics, extra=""):
         print(f"  {cfg.GROUP_NAMES[g]}: {metrics['group_acc'][g]:.2%}")
 
 
-# def save_best(model, wga, best_wga, tag):
-#     """Save checkpoint when wga improves. Returns updated best_wga."""
-#     if wga > best_wga:
-#         os.makedirs(cfg.CKPT_DIR, exist_ok=True)
-#         path = os.path.join(cfg.CKPT_DIR, f"best_{tag}.pt")
-#         torch.save(model.state_dict(), path)
-#         print(f"  -> saved {path}")
-#         return wga
-#     return best_wga
-
-
 class BestTracker:
     """同时按 WGA / EOD / EqOdd / tradeoff 维护多份 best checkpoint。
     tradeoff 规则：WGA 距最佳不超过 delta 时，选 EOD 最小的。
