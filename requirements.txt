@@ -3,3 +3,4 @@ torchvision>=0.15
 pandas
 Pillow
 scikit-learn
+matplotlib

@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import config as cfg
 
 
@@ -125,16 +126,36 @@ class FairSupConLoss(nn.Module):
         return loss
 
 
+class GroupWeightedCrossEntropyLoss(nn.Module):
+    """Group-weighted CE loss used by reweighting mode."""
+
+    def __init__(self, group_weights: torch.Tensor):
+        super().__init__()
+        self.register_buffer("group_weights", group_weights.float())
+
+    def forward(self, logits, targets, sensitives):
+        groups = targets * 2 + sensitives
+        weights = self.group_weights[groups]
+        ce_loss = F.cross_entropy(logits, targets, reduction="none")
+        return (ce_loss * weights).mean()
+
+
 class TotalLoss(nn.Module):
     """总损失（README §2.3）：L_total = L_CE + λ·L_FSC。"""
 
-    def __init__(self, lambda_con=cfg.LAMBDA_CON, temperature=cfg.TEMPERATURE):
+    def __init__(self, lambda_con=cfg.LAMBDA_CON, temperature=cfg.TEMPERATURE, group_weights=None):
         super().__init__()
-        self.ce = nn.CrossEntropyLoss()
+        self.ce = nn.CrossEntropyLoss() if group_weights is None else GroupWeightedCrossEntropyLoss(group_weights)
         self.supcon = FairSupConLoss(temperature=temperature)
         self.lam = lambda_con
+        self.use_group_reweight = group_weights is not None
 
     def forward(self, logits, embeddings, targets, sensitives=None):
-        ce = self.ce(logits, targets)
+        if self.use_group_reweight:
+            if sensitives is None:
+                raise ValueError("sensitives is required when group reweighting is enabled")
+            ce = self.ce(logits, targets, sensitives)
+        else:
+            ce = self.ce(logits, targets)
         con = self.supcon(embeddings, targets, sensitives)
         return ce + self.lam * con, ce, con

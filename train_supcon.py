@@ -1,4 +1,5 @@
 import argparse
+from collections import Counter
 import torch
 import config as cfg
 from dataset import get_loader
@@ -10,33 +11,43 @@ from utils import set_seed, get_device, log_epoch, BestTracker
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--balanced", action="store_true", help="Use group-balanced sampling")
-    p.add_argument("--unbalanced", action="store_true", help="Use unbalanced sampling")
+    p.add_argument(
+        "--group-balance",
+        choices=["none", "oversampling", "reweighting"],
+        default="oversampling",
+        help="Group-balance method for training data/loss",
+    )
     p.add_argument("--epochs", type=int, default=cfg.NUM_EPOCHS, help=f"Number of epochs (default: {cfg.NUM_EPOCHS})")
     p.add_argument("--lambda-con", type=float, default=cfg.LAMBDA_CON, help=f"Contrastive loss weight (default: {cfg.LAMBDA_CON})")
     p.add_argument("--temperature", type=float, default=cfg.TEMPERATURE, help=f"SupCon temperature tau (default: {cfg.TEMPERATURE})")
     args = p.parse_args()
 
-    if args.balanced and args.unbalanced:
-        raise ValueError("Cannot specify both --balanced and --unbalanced")
-
-    # 默认balanced平衡采样
-    # 有 --balanced 则平衡采样，有 --unbalanced 则均匀采样
-    balanced = args.balanced if args.balanced else (not args.unbalanced)
+    group_balance_mode = args.group_balance
 
     set_seed()
     device = get_device()
-    tag = "FSC_balanced_"+cfg.TARGET_ATTR+"_vs_"+cfg.SENSITIVE_ATTR if balanced else "FSC_unbalanced_"+cfg.TARGET_ATTR+"_vs_"+cfg.SENSITIVE_ATTR
+    tag = f"FSC_{group_balance_mode}_{cfg.TARGET_ATTR}_vs_{cfg.SENSITIVE_ATTR}"
     lambda_con = args.lambda_con
     temperature = args.temperature
     epochs = args.epochs
-    print(f"Fairness Sup_Con:  epochs={epochs}  lambda={lambda_con}  tau={temperature}  balanced={balanced}  warmup={cfg.WARMUP_EPOCHS}  device={device}")
+    print(
+        f"Fairness Sup_Con:  epochs={epochs}  lambda={lambda_con}  tau={temperature}  "
+        f"group_balance={group_balance_mode}  warmup={cfg.WARMUP_EPOCHS}  device={device}"
+    )
 
-    train_loader = get_loader("train", cfg.BATCH_SIZE, balanced=balanced)
+    loader_balance_mode = "oversampling" if group_balance_mode == "oversampling" else "none"
+    train_loader = get_loader("train", cfg.BATCH_SIZE, group_balance_mode=loader_balance_mode)
     val_loader = get_loader("val", cfg.BATCH_SIZE)
 
+    group_weights = None
+    if group_balance_mode == "reweighting":
+        group_counts = Counter(train_loader.dataset.groups)
+        raw_weights = torch.tensor([1.0 / group_counts[g] for g in range(4)], dtype=torch.float32)
+        group_weights = raw_weights / raw_weights.mean()
+        print(f"Reweighting normalized group weights: {group_weights.tolist()}")
+
     model = FairClassifier().to(device)
-    criterion = TotalLoss(lambda_con=lambda_con, temperature=temperature)
+    criterion = TotalLoss(lambda_con=lambda_con, temperature=temperature, group_weights=group_weights).to(device)
 
     backbone_params = list(model.backbone.parameters())
     head_params = list(model.projector.parameters()) + list(model.classifier.parameters())

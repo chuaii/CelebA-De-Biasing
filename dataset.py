@@ -57,10 +57,14 @@ def _group_balanced_sampler(dataset):
     return WeightedRandomSampler(weights, num_samples=len(dataset), replacement=True)
 
 
-def get_loader(split, batch_size=None, balanced=False):
+def get_loader(split, batch_size=None, group_balance_mode="none"):
     is_train = split == "train"
     ds = CelebAFairness(split, train_transform if is_train else eval_transform)
-    sampler = _group_balanced_sampler(ds) if (is_train and balanced) else None
+    if group_balance_mode not in {"none", "oversampling", "reweighting"}:
+        raise ValueError(f"Unknown group_balance_mode: {group_balance_mode}")
+    # Reweighting is handled in loss; data loader stays unbalanced/random here.
+    use_oversampling = is_train and group_balance_mode == "oversampling"
+    sampler = _group_balanced_sampler(ds) if use_oversampling else None
     return DataLoader(
         ds, 
         batch_size=batch_size or cfg.BATCH_SIZE,
