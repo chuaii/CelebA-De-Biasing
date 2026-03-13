@@ -102,3 +102,28 @@ $$\mathcal{L}*{\text{total}} = \mathcal{L}*{\text{CE}} + \lambda \cdot \mathcal{
 | **Mar 27 (Q3)** | Full comparison; fairness evaluation; final report      |
 
 
+## Blond Hair vs Male Figures
+
+### 1) Training Dynamics
+
+![Training Curves](blond_male_figs/01_training_curves.png)
+
+### 2) Best-WGA Checkpoint (Main Metrics)
+
+![Best WGA Main Metrics](blond_male_figs/02_best_wga_main_metrics.png)
+
+### 3) Best-WGA Checkpoint (Group Accuracy)
+
+![Best WGA Group Accuracy](blond_male_figs/03_best_wga_group_accuracy.png)
+
+### 4) Tradeoff Checkpoint (Main Metrics)
+
+![Tradeoff Main Metrics](blond_male_figs/04_tradeoff_main_metrics.png)
+
+### 5) Tradeoff Checkpoint (Group Accuracy)
+
+![Tradeoff Group Accuracy](blond_male_figs/05_tradeoff_group_accuracy.png)
+
+### 6) Overall vs WGA Tradeoff
+
+![Overall vs WGA Tradeoff](blond_male_figs/06_overall_wga_tradeoff.png)
