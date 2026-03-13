@@ -7,29 +7,29 @@
 **Experiment Design:** FairSupCon + group-balanced sampling, with ablation to see what each part does. Group DRO (Sagawa et al., ICLR 2020) as other SOTA.
 
 
-| Stage | **Method**                     | **Sampling**   | **Loss**   | **What it fixes?**                 |
-| ----- | ------------------------------ | -------------- | ---------- | ---------------------------------- |
-| ①     | ERM                            | Unbalanced     | CE         | Baseline, expose shortcut          |
-| ②     | + Balanced sampling only       | Group-balanced | CE         | By based on data level             |
-| ③     | + FairSupCon only              | Unbalanced     | CE + λ·FSC | By based on representational level |
-| ④     | Balanced sampling + FairSupCon | Group-balanced | CE + λ·FSC | Combine together                   |
-| ⑤     | vs Group DRO                   | Unbalanced     | DRO        | Compared to other SOTA             |
+| Stage | **Method**                                                                           | **Sampling**   | **Loss**   | **What it fixes?**                 |
+| ----- | ------------------------------------------------------------------------------------ | -------------- | ---------- | ---------------------------------- |
+| ①     | ERM                                                                                  | Unbalanced     | CE         | Baseline, expose shortcut          |
+| ②     | + 4 group-balanced only: ( Oversampling / Undersampling / Reweighting / Focal Loss ) | Group-balanced | CE         | By based on data level             |
+| ③     | + FairSupCon only                                                                    | Unbalanced     | CE + λ·FSC | By based on representational level |
+| ④     | Balanced (Oversampling / Reweighting) + FairSupCon                                   | Group-balanced | CE + λ·FSC | Combine together                   |
+| ⑤     | vs Group DRO                                                                         | Unbalanced     | DRO        | Compared to other SOTA             |
 
 
 This is a **2×2 ablation Matrix**：
 
 
-|                   | Unbalanced (Random) | Group-balanced            |
-| ----------------- | ------------------- | ------------------------- |
-| **No FairSupCon** | ① ERM               | ② ERM + Balanced sampling |
-| **FairSupCon**    | ③ ERM + FairSupCon  | ④ **Final Method**        |
+|                   | Unbalanced (Random) | Group-balanced           |
+| ----------------- | ------------------- | ------------------------ |
+| **No FairSupCon** | ① ERM               | ② ERM + Balanced Methods |
+| **FairSupCon**    | ③ ERM + FairSupCon  | ④ **Final Method**       |
 
 
 This design is called **factorial ablation**.
 
 **Expected**: 
 
-*① ERM ≪ ③ FairSupCon only < ② Balanced Sampling only < ④ Combined ≈ or > ⑤ Group DRO*
+*① ERM ≪ ③ FairSupCon only < ② Balanced Methods only ≈ or < ④ **Combined** ≈ ⑤ Group DRO*
 
 ## 2. Formulation
 

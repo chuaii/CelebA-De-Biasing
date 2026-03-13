@@ -20,7 +20,7 @@ def main():
     epochs = args.epochs
     print(f"Baseline (ERM):  epochs={epochs}  warmup={cfg.WARMUP_EPOCHS}  device={device}")
 
-    train_loader = get_loader("train", args.bs, balanced=False)
+    train_loader = get_loader("train", args.bs, group_balance_mode="none")
     val_loader = get_loader("val", args.bs)
 
     model = FairClassifier().to(device)
