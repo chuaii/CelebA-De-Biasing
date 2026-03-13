@@ -10,7 +10,7 @@
 | Stage | **Method**                                                                           | **Sampling**   | **Loss**   | **What it fixes?**                 |
 | ----- | ------------------------------------------------------------------------------------ | -------------- | ---------- | ---------------------------------- |
 | ①     | ERM                                                                                  | Unbalanced     | CE         | Baseline, expose shortcut          |
-| ②     | + 4 group-balanced only: ( Oversampling / Undersampling / Reweighting / Focal Loss ) | Group-balanced | CE         | By based on data level             |
+| ②     | + 4 group-balanced only: ( Oversampling / Undersampling / Reweighting / Focal Loss ) | Group-balanced | CE         | By based on data level and algorithm level (loss)            |
 | ③     | + FairSupCon only                                                                    | Unbalanced     | CE + λ·FSC | By based on representational level |
 | ④     | Balanced (Oversampling / Reweighting) + FairSupCon                                   | Group-balanced | CE + λ·FSC | Combine together                   |
 | ⑤     | vs Group DRO                                                                         | Unbalanced     | DRO        | Compared to other SOTA             |
