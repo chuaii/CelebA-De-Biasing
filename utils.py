@@ -18,8 +18,8 @@ def get_device():
 
 def log_epoch(ep, total_epochs, loss, metrics, extra=""):
     line = (f"[{ep+1}/{total_epochs}] loss={loss:.4f} acc={metrics['overall_acc']:.2%}  wga={metrics['worst_group_acc']:.2%}")
-    if "eod" in metrics:
-        line += f"  eod={metrics['eod']:.4f}  eqodd={metrics['eqodd']:.4f}  dpd={metrics['dpd']:.4f}"
+    if "eqodd" in metrics:
+        line += f"  eqodd={metrics['eqodd']:.4f}"
     if extra:
         line += f"  {extra}"
     print(line)
@@ -28,20 +28,13 @@ def log_epoch(ep, total_epochs, loss, metrics, extra=""):
 
 
 class BestTracker:
-    """同时按 WGA / EOD / EqOdd / tradeoff 维护多份 best checkpoint。
-    tradeoff 规则：WGA 距最佳不超过 delta 时，选 EOD 最小的。
-    warmup 期间不保存 checkpoint。
-    """
+    """按 WGA / EqOdd 维护 best checkpoint。warmup 期间不保存。"""
 
-    def __init__(self, tag, delta=0.005, warmup_epochs=0):
+    def __init__(self, tag, warmup_epochs=0):
         self.tag = tag
-        self.delta = delta
         self.warmup_epochs = warmup_epochs
         self.best_wga = 0.0
-        self.best_eod = float("inf")
         self.best_eqodd = float("inf")
-        self.tradeoff_wga = 0.0
-        self.tradeoff_eod = float("inf")
 
     def _save(self, model, suffix):
         os.makedirs(cfg.CKPT_DIR, exist_ok=True)
@@ -50,34 +43,23 @@ class BestTracker:
         return path
 
     def update(self, model, metrics, epoch=0):
-        """根据 metrics dict（含 worst_group_acc / eod / eqodd）更新所有 best。
+        """根据 metrics dict（含 worst_group_acc / eqodd）更新 best。
         warmup 期间跳过保存。
         """
         if epoch < self.warmup_epochs:
             return
         wga = metrics["worst_group_acc"]
-        eod = metrics["eod"]
         eqodd = metrics["eqodd"]
         saved = []
 
         if wga > self.best_wga:
             self.best_wga = wga
             saved.append(self._save(model, "wga"))
-        if eod < self.best_eod:
-            self.best_eod = eod
-            saved.append(self._save(model, "eod"))
         if eqodd < self.best_eqodd:
             self.best_eqodd = eqodd
             saved.append(self._save(model, "eqodd"))
-        if wga >= self.best_wga - self.delta and eod < self.tradeoff_eod:
-            self.tradeoff_wga = wga
-            self.tradeoff_eod = eod
-            saved.append(self._save(model, "tradeoff"))
         if saved:
             print(f"  -> saved {', '.join(os.path.basename(p) for p in saved)}")
 
     def summary(self):
-        return (f"best wga={self.best_wga:.2%}  "
-                f"best eod={self.best_eod:.4f}  "
-                f"best eqodd={self.best_eqodd:.4f}  "
-                f"tradeoff wga={self.tradeoff_wga:.2%}/eod={self.tradeoff_eod:.4f}")
+        return f"best wga={self.best_wga:.2%}  best eqodd={self.best_eqodd:.4f}"

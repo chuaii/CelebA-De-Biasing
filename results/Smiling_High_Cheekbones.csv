@@ -1,0 +1,11 @@
+method,λ,group_balance,epoch,train_loss,overall_acc,wga,worst_group,eqodd,acc_NonSmiling_HighCheekbones,acc_NonSmiling_LowCheekbones,acc_Smiling_HighCheekbones,acc_Smiling_LowCheekbones
+FSC,1.5,oversampling,1,8.0484,0.5153,0.0049,Smiling_HighCheekbones,0.0038,0.9920,0.9958,0.0049,0.0053
+FSC,1.5,oversampling,2,7.2378,0.8434,0.6500,NonSmiling_LowCheekbones,0.1401,0.7901,0.6500,0.8386,0.9364
+FSC,1.5,oversampling,3,6.7467,0.8681,0.6415,NonSmiling_LowCheekbones,0.1785,0.8200,0.6415,0.8759,0.9570
+FSC,1.5,oversampling,4,6.6486,0.8752,0.6551,NonSmiling_LowCheekbones,0.1777,0.8327,0.6551,0.8824,0.9566
+FSC,1.5,oversampling,5,6.6005,0.8768,0.6491,NonSmiling_LowCheekbones,0.1855,0.8346,0.6491,0.8867,0.9584
+FSC,1.5,oversampling,6,6.5865,0.8816,0.6737,NonSmiling_LowCheekbones,0.1719,0.8456,0.6737,0.8791,0.9560
+FSC,1.5,oversampling,7,6.5657,0.8906,0.7060,NonSmiling_LowCheekbones,0.1592,0.8652,0.7060,0.8737,0.9524
+FSC,1.5,oversampling,8,6.5153,0.8916,0.7035,NonSmiling_LowCheekbones,0.1613,0.8648,0.7035,0.8780,0.9550
+FSC,1.5,oversampling,9,6.4953,0.8995,0.7324,NonSmiling_LowCheekbones,0.1510,0.8834,0.7324,0.8672,0.9516
+FSC,1.5,oversampling,10,6.4755,0.9001,0.7307,NonSmiling_LowCheekbones,0.1501,0.8807,0.7307,0.8775,0.9539

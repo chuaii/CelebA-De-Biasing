@@ -1,10 +1,8 @@
 """
-评估脚本：整体准确率、分组准确率、公平性指标（DPD / EOD / EqOdd）。
+评估脚本：整体准确率、分组准确率、公平性指标（WGA / EqOdd）。
 
 公平性指标说明：
-  - Demographic Parity Difference  (DPD)
-  - Equal Opportunity Difference    (EOD)
-  - Equalized Odds Difference       (max of |TPR gap|, |FPR gap|)
+  - Equalized Odds Difference  (EqOdd) = max(|ΔTPR|, |ΔFPR|)
   - Per-sensitive-group accuracy / TPR / FPR
 """
 
@@ -24,7 +22,7 @@ def compute_fairness(preds, targets, sensitives):
     """
     groups = sorted(sensitives.unique().tolist())
     assert len(groups) == 2, f"Expected binary sensitive attr, got {groups}"
-    g0, g1 = groups  # 0 = Female, 1 = Male
+    g0, g1 = groups
 
     stats = {}
     for g in groups:
@@ -34,7 +32,6 @@ def compute_fairness(preds, targets, sensitives):
 
         n = mask.sum().item()
         acc = (g_preds == g_targets).float().mean().item()
-        pos_rate = (g_preds == 1).float().mean().item()
 
         tp = ((g_preds == 1) & (g_targets == 1)).sum().item()
         fp = ((g_preds == 1) & (g_targets == 0)).sum().item()
@@ -44,17 +41,14 @@ def compute_fairness(preds, targets, sensitives):
         tpr = tp / max(tp + fn, 1)
         fpr = fp / max(fp + tn, 1)
 
-        stats[g] = dict(n=n, acc=acc, pos_rate=pos_rate, tpr=tpr, fpr=fpr,
+        stats[g] = dict(n=n, acc=acc, tpr=tpr, fpr=fpr,
                         tp=tp, fp=fp, fn=fn, tn=tn)
 
-    dpd = abs(stats[g0]["pos_rate"] - stats[g1]["pos_rate"])
-    eod = abs(stats[g0]["tpr"] - stats[g1]["tpr"])
-    eqodd = max(eod, abs(stats[g0]["fpr"] - stats[g1]["fpr"]))
+    eqodd = max(abs(stats[g0]["tpr"] - stats[g1]["tpr"]),
+                abs(stats[g0]["fpr"] - stats[g1]["fpr"]))
 
     return {
         "group_stats": stats,
-        "demographic_parity_diff": dpd,
-        "equal_opportunity_diff": eod,
         "equalized_odds_diff": eqodd,
     }
 
@@ -62,29 +56,25 @@ def compute_fairness(preds, targets, sensitives):
 def print_fairness_report(metrics):
     """打印详细公平性报告。"""
     gs = metrics["group_stats"]
-    sensitive_names = {0: "Female", 1: "Male"}
+    sensitive_names = {0: f"Non{cfg.SENSITIVE_ATTR}", 1: cfg.SENSITIVE_ATTR}
 
-    print("=" * 62)
+    print("=" * 54)
     print("           Fairness Evaluation Report")
-    print("=" * 62)
+    print("=" * 54)
 
-    header = f"{'Group':>10} {'N':>7} {'Acc':>8} {'P(Y=1)':>8} {'TPR':>8} {'FPR':>8}"
+    header = f"{'Group':>10} {'N':>7} {'Acc':>8} {'TPR':>8} {'FPR':>8}"
     print(header)
-    print("-" * 62)
+    print("-" * 54)
     for g in sorted(gs):
         s = gs[g]
         print(f"{sensitive_names[g]:>10} {s['n']:>7d} {s['acc']:>8.2%} "
-              f"{s['pos_rate']:>8.4f} {s['tpr']:>8.2%} {s['fpr']:>8.2%}")
+              f"{s['tpr']:>8.2%} {s['fpr']:>8.2%}")
 
-    print("-" * 62)
-    print(f"  Demographic Parity Diff (DPD) : {metrics['demographic_parity_diff']:.4f}")
-    print(f"  Equal Opportunity Diff  (EOD) : {metrics['equal_opportunity_diff']:.4f}")
-    print(f"  Equalized Odds Diff           : {metrics['equalized_odds_diff']:.4f}")
-    print("=" * 62)
+    print("-" * 54)
+    print(f"  Equalized Odds Diff : {metrics['equalized_odds_diff']:.4f}")
+    print("=" * 54)
     print()
-    print("  DPD = |P(Ŷ=1|Female) − P(Ŷ=1|Male)|          → 0 is fair")
-    print("  EOD = |TPR_Female − TPR_Male|                  → 0 is fair")
-    print("  EqOdd = max(|ΔTPR|, |ΔFPR|)                   → 0 is fair")
+    print("  EqOdd = max(|ΔTPR|, |ΔFPR|)  → 0 is fair")
     print()
 
 
@@ -106,7 +96,7 @@ def collect_predictions(model, loader, device):
 
 @torch.no_grad()
 def evaluate(model, loader, device):
-    """返回 group accuracy 指标 + 公平性指标（DPD / EOD / EqOdd）。"""
+    """返回 group accuracy 指标 + 公平性指标（WGA / EqOdd）。"""
     model.eval()
     correct, count = defaultdict(int), defaultdict(int)
     total_correct, total_count = 0, 0
@@ -140,8 +130,6 @@ def evaluate(model, loader, device):
         "group_acc": group_acc,
         "worst_group_acc": group_acc[wg],
         "worst_group_id": wg,
-        "dpd": fair["demographic_parity_diff"],
-        "eod": fair["equal_opportunity_diff"],
         "eqodd": fair["equalized_odds_diff"],
         "fairness_metrics": fair,
     }
@@ -162,7 +150,7 @@ def main():
     m = evaluate(model, get_loader(args.split, args.bs), device)
 
     print(f"split={args.split}  overall={m['overall_acc']:.2%}  wga={m['worst_group_acc']:.2%}"
-          f"  eod={m['eod']:.4f}  eqodd={m['eqodd']:.4f}  dpd={m['dpd']:.4f}")
+          f"  eqodd={m['eqodd']:.4f}")
     for g in range(4):
         tag = " <- worst" if g == m["worst_group_id"] else ""
         print(f"  {cfg.GROUP_NAMES[g]}: {m['group_acc'][g]:.2%}{tag}")
