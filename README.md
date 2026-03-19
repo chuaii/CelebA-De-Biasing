@@ -9,12 +9,10 @@ We select high-bias pairs from a full pairwise bias analysis of all 40 CelebA at
 | Target               | Sensitive        |  DPD  |  WMR  |
 | -------------------- | ---------------- | :---: | :---: |
 | Wearing_Lipstick     | Male             | 0.799 | 0.006 |
-| Young                | Gray_Hair        | 0.761 | 0.002 |
-| Smiling              | High_Cheekbones  | 0.686 | 0.145 |
 | Blond_Hair           | Male             | —     | 0.009 |
-| **Mouth_Slightly_Open** | **Smiling**   | **0.537** | **0.287** |
+| Mouth_Slightly_Open  | Smiling          | 0.537 | 0.287 |
 
-> DPD = \|P(T=1\|S=1) − P(T=1\|S=0)\|, WMR = min(group) / max(group). Current experiment: **Mouth\_Slightly\_Open × Smiling**.
+> DPD = \|P(T=1\|S=1) − P(T=1\|S=0)\|, WMR = min(group) / max(group).
 
 ![Bias Heatmap (DPD + min group)](bias_analysis/bias_heatmap.png)
 
@@ -118,26 +116,38 @@ $$\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{CE}} + \lambda \cdot \mathcal{
 | **Mar 27 (Q3)** | Full comparison; fairness evaluation; final report      |
 
 
-## Blond Hair vs Male — Pilot Experiment Results
+## 5. Experiment Results
 
-### BlondHair × Male
+### Evaluation Summary
 
-![BlondHair vs Male comparison](results/blond_hair_male_comparison.png)
+| Task | Method | Overall Acc | WGA | EqOdd | Worst Group |
+| ---- | ------ | :---------: | :-: | :---: | ----------- |
+| Blond × Male | Baseline (ERM) | 0.9539 | 0.3889 | 0.5018 | Blond_Male |
+| Blond × Male | FSC (Unbalanced) | 0.9532 | 0.4111 | 0.4679 | Blond_Male |
+| Blond × Male | FSC (Oversampling) | 0.9176 | **0.8556** | **0.0940** | Blond_Male |
+| Blond × Male | FSC (Reweighting) | 0.9069 | **0.8667** | **0.0853** | Blond_Male |
+| Mouth × Smiling | Baseline (ERM) | 0.9315 | 0.7845 | 0.1934 | MouthOpen_NonSmiling |
+| Mouth × Smiling | FSC (Unbalanced) | 0.9296 | 0.8001 | 0.1765 | MouthOpen_NonSmiling |
+| Mouth × Smiling | FSC (Oversampling) | 0.9255 | **0.8722** | **0.0987** | MouthOpen_NonSmiling |
+| Mouth × Smiling | FSC (Reweighting) | 0.9246 | **0.8704** | **0.1051** | MouthOpen_NonSmiling |
 
-- CSV: `results/BlondHair_Male.csv`
+> WGA = Worst Group Accuracy (higher is better), EqOdd = Equalized Odds gap (lower is better). Bold = best within each task.
 
-### Mouth_Slightly_Open × Smiling
+### Group Accuracy Breakdown
+
+![Evaluation Summary](results/eval_summary.png)
+
+### Training Curves
+
+#### BlondHair × Male
+
+![BlondHair vs Male comparison](results/blond_male_comparison.png)
+
+- Training log: `results/training_blondhair_male.csv`
+
+#### Mouth_Slightly_Open × Smiling
 
 ![MouthSlightlyOpen vs Smiling comparison](results/mouth_smiling_comparison.png)
 
-- CSV: `results/MouthSlightlyOpen_Smiling.csv`
+- Training log: `results/training_mouthslightlyopen_smiling.csv`
 
-### Smiling × High_Cheekbones
-
-- CSV: `results/Smiling_High_Cheekbones.csv`
-
-### Young × Gray_Hair
-
-![Young vs GrayHair comparison](results/young_gray_comparison.png)
-
-- CSV: `results/Young_GrayHair.csv`

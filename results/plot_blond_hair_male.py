@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 CSV_PATH = Path(__file__).parent / "BlondHair_Male.csv"
-OUT_PATH = Path(__file__).parent / "blond_hair_male_comparison.png"
+OUT_PATH = Path(__file__).parent / "blond_male_comparison.png"
 
 METHODS = ["Baseline (ERM)", "FSC (Unbalanced)", "FSC (Oversampling)", "FSC (Reweighting)"]
 COLORS = {

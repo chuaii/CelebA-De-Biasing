@@ -40,7 +40,9 @@ def main():
 
     # 默认将 CSV 写到项目下的 results 目录
     if args.csv is None:
-        args.csv = os.path.join(cfg.ROOT, "results", f"{cfg.TARGET_ATTR}_{cfg.SENSITIVE_ATTR}.csv")
+        target = cfg.TARGET_ATTR.replace("_", "").lower()
+        sensitive = cfg.SENSITIVE_ATTR.replace("_", "").lower()
+        args.csv = os.path.join(cfg.ROOT, "results", f"training_{target}_{sensitive}.csv")
 
     set_seed()
     device = get_device()

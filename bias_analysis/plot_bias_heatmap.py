@@ -73,8 +73,6 @@ MIN_GROUP_THRESHOLD     = 1000
 SELECTED_PAIRS = {
     ("Blond_Hair",         "Male"),
     ("Mouth_Slightly_Open","Smiling"),
-    ("Young",              "Gray_Hair"),
-    ("Smiling",            "High_Cheekbones"),
 }
 
 
