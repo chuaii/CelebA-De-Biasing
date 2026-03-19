@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-CSV_PATH = Path(__file__).parent / "BlondHair_Male.csv"
+CSV_PATH = Path(__file__).parent / "training_blondhair_male.csv"
 OUT_PATH = Path(__file__).parent / "blond_male_comparison.png"
 
 METHODS = ["Baseline (ERM)", "FSC (Unbalanced)", "FSC (Oversampling)", "FSC (Reweighting)"]
