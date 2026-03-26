@@ -2,5 +2,4 @@ torch>=2.0
 torchvision>=0.15
 pandas
 Pillow
-scikit-learn
 matplotlib

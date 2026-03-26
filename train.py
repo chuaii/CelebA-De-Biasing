@@ -5,17 +5,33 @@ from collections import Counter
 import torch
 import config as cfg
 from dataset import get_loader
-from model import FairClassifier
-from loss import TotalLoss
+from fair_supcon import FairClassifier, TotalLoss
 from eval import evaluate
 from utils import set_seed, get_device, log_epoch, BestTracker
 
 _GN = cfg.GROUP_NAMES  # {0: "...", 1: "...", 2: "...", 3: "..."}
+# Short stems for default CSV names under training/ (see training/*.csv)
+_TRAINING_CSV_STEM = {
+    ("Blond_Hair", "Male"): "blond_male",
+    ("Mouth_Slightly_Open", "Smiling"): "mouth_smiling",
+    ("Smiling", "High_Cheekbones"): "smiling_highcheekbones",
+}
+
 CSV_FIELDS = [
     "method", "λ", "group_balance", "epoch",
     "train_loss", "overall_acc", "wga", "worst_group", "eqodd",
     *[f"acc_{_GN[g]}" for g in range(4)],
 ]
+
+
+def default_training_csv_path() -> str:
+    key = (cfg.TARGET_ATTR, cfg.SENSITIVE_ATTR)
+    stem = _TRAINING_CSV_STEM.get(key)
+    if stem is None:
+        t = cfg.TARGET_ATTR.replace("_", "").lower()
+        s = cfg.SENSITIVE_ATTR.replace("_", "").lower()
+        stem = f"{t}_{s}"
+    return os.path.join(cfg.ROOT, "training", f"training_{stem}.csv")
 
 
 def append_csv(path, row):
@@ -38,11 +54,9 @@ def main():
     p.add_argument("--csv", type=str, default=None, help="CSV path to append per-epoch metrics")
     args = p.parse_args()
 
-    # 默认将 CSV 写到项目下的 results 目录
     if args.csv is None:
-        target = cfg.TARGET_ATTR.replace("_", "").lower()
-        sensitive = cfg.SENSITIVE_ATTR.replace("_", "").lower()
-        args.csv = os.path.join(cfg.ROOT, "results", f"training_{target}_{sensitive}.csv")
+        os.makedirs(os.path.join(cfg.ROOT, "training"), exist_ok=True)
+        args.csv = default_training_csv_path()
 
     set_seed()
     device = get_device()

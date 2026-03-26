@@ -122,38 +122,38 @@ $$\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{CE}} + \lambda \cdot \mathcal{
 
 | Task | Method | Overall Acc | WGA | EqOdd | Worst Group |
 | ---- | ------ | :---------: | :-: | :---: | ----------- |
-| Blond × Male | Baseline (ERM) | 0.9539 | 0.3889 | 0.5018 | Blond_Male |
-| Blond × Male | FSC (Unbalanced) | 0.9532 | 0.4111 | 0.4679 | Blond_Male |
-| Blond × Male | FSC (Oversampling) | 0.9176 | **0.8556** | **0.0940** | Blond_Male |
-| Blond × Male | FSC (Reweighting) | 0.9069 | **0.8667** | **0.0853** | Blond_Male |
-| Mouth × Smiling | Baseline (ERM) | 0.9315 | 0.7845 | 0.1934 | MouthOpen_NonSmiling |
-| Mouth × Smiling | FSC (Unbalanced) | 0.9296 | 0.8001 | 0.1765 | MouthOpen_NonSmiling |
-| Mouth × Smiling | FSC (Oversampling) | 0.9255 | **0.8722** | **0.0987** | MouthOpen_NonSmiling |
-| Mouth × Smiling | FSC (Reweighting) | 0.9246 | **0.8704** | **0.1051** | MouthOpen_NonSmiling |
+| Blond × Male | Baseline (ERM) | 0.9539 [0.9510, 0.9568] | 0.3889 [0.3200, 0.4624] | 0.5018 [0.4283, 0.5723] | Blond_Male |
+| Blond × Male | FSC (Unbalanced) | 0.9532 [0.9504, 0.9562] | 0.4111 [0.3416, 0.4842] | 0.4679 [0.3930, 0.5400] | Blond_Male |
+| Blond × Male | FSC (Oversampling) | 0.9176 [0.9136, 0.9214] | 0.8556 [0.8022, 0.9034] | 0.0940 [0.0433, 0.1480] | Blond_Male |
+| Blond × Male | FSC (Reweighting) | 0.9069 [0.9029, 0.9109] | **0.8667** [0.8154, 0.8994] | **0.0853** [0.0358, 0.1382] | Blond_Male |
+| Mouth × Smiling | Baseline (ERM) | 0.9315 [0.9280, 0.9350] | 0.7845 [0.7676, 0.8008] | 0.1934 [0.1768, 0.2105] | MouthOpen_NonSmiling |
+| Mouth × Smiling | FSC (Unbalanced) | 0.9296 [0.9261, 0.9332] | 0.8001 [0.7839, 0.8161] | 0.1765 [0.1599, 0.1931] | MouthOpen_NonSmiling |
+| Mouth × Smiling | FSC (Oversampling) | 0.9255 [0.9220, 0.9291] | **0.8722** [0.8584, 0.8853] | **0.0987** [0.0850, 0.1132] | MouthOpen_NonSmiling |
+| Mouth × Smiling | FSC (Reweighting) | 0.9246 [0.9209, 0.9282] | 0.8704 [0.8565, 0.8835] | 0.1051 [0.0915, 0.1191] | MouthOpen_NonSmiling |
 
-> WGA = Worst Group Accuracy (higher is better), EqOdd = Equalized Odds gap (lower is better). Bold = best within each task.
+> Test-set point estimate; brackets = bootstrap 95% CI (5000 resamples; see `outputs/bootstrap_ci_summary.csv`). WGA = Worst Group Accuracy (higher is better), EqOdd = Equalized Odds gap (lower is better). Bold = best point estimate within each task on WGA / EqOdd.
 
-### Group Accuracy Breakdown
+### Group Accuracy Breakdown (bootstrap 95% CI)
 
 #### BlondHair × Male
 
-![BlondHair × Male group accuracy breakdown](results/fsc_eval_blondhair_male_acc.png)
+![BlondHair × Male — per-group accuracy with bootstrap 95% CI](outputs/bootstrap_blondhair_male_acc.png)
 
 #### Mouth_Slightly_Open × Smiling
 
-![Mouth_Slightly_Open × Smiling group accuracy breakdown](results/fsc_eval_mouthopen_smiling_acc.png)
+![Mouth × Smiling — per-group accuracy with bootstrap 95% CI](outputs/bootstrap_mouthopen_smiling_acc.png)
 
 ### Training Curves
 
 #### BlondHair × Male
 
-![BlondHair × Male validation metrics during training](results/training_val_blond_male_log.png)
+![BlondHair × Male validation metrics during training](training/training_log_val_blond_male.png)
 
-- Training log: `results/training_blond_male.csv`
+- Training log: `training/training_blond_male.csv`
 
 #### Mouth_Slightly_Open × Smiling
 
-![Mouth_Slightly_Open × Smiling validation metrics during training](results/training_val_mouth_smiling_log.png)
+![Mouth_Slightly_Open × Smiling validation metrics during training](training/training_log_val_mouth_smiling.png)
 
-- Training log: `results/training_mouth_smiling.csv`
+- Training log: `training/training_mouth_smiling.csv`
 

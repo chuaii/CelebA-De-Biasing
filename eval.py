@@ -11,7 +11,7 @@ from collections import defaultdict
 import torch
 import config as cfg
 from dataset import get_loader
-from model import FairClassifier
+from fair_supcon import FairClassifier
 
 # ---------- 公平性指标 ----------
 
@@ -94,37 +94,25 @@ def collect_predictions(model, loader, device):
 
 # ---------- 主评估逻辑 ----------
 
-@torch.no_grad()
-def evaluate(model, loader, device):
-    """返回 group accuracy 指标 + 公平性指标（WGA / EqOdd）。"""
-    model.eval()
+def compute_metrics_from_predictions(preds, targets, sensitives, groups=None):
+    """根据预测结果直接计算整体/分组准确率与公平性指标。"""
+    if groups is None:
+        groups = targets * 2 + sensitives
+
+    hit = preds == targets
+    total_correct = hit.sum().item()
+    total_count = len(targets)
+
     correct, count = defaultdict(int), defaultdict(int)
-    total_correct, total_count = 0, 0
-    all_preds, all_targets, all_sensitives = [], [], []
-
-    for images, targets, sensitives, groups in loader:
-        images, targets, groups = images.to(device), targets.to(device), groups.to(device)
-        preds = model(images)[1].argmax(1)
-        hit = (preds == targets)
-
-        total_correct += hit.sum().item()
-        total_count += len(targets)
-        for g in range(4):
-            mask = groups == g
-            correct[g] += (hit & mask).sum().item()
-            count[g] += mask.sum().item()
-
-        all_preds.append(preds.cpu())
-        all_targets.append(targets.cpu())
-        all_sensitives.append(sensitives)
+    for g in range(4):
+        mask = groups == g
+        correct[g] = (hit & mask).sum().item()
+        count[g] = mask.sum().item()
 
     group_acc = {g: correct[g] / max(count[g], 1) for g in range(4)}
     wg = min(group_acc, key=group_acc.get)
 
-    fair = compute_fairness(
-        torch.cat(all_preds), torch.cat(all_targets), torch.cat(all_sensitives),
-    )
-
+    fair = compute_fairness(preds, targets, sensitives)
     return {
         "overall_acc": total_correct / max(total_count, 1),
         "group_acc": group_acc,
@@ -133,6 +121,12 @@ def evaluate(model, loader, device):
         "eqodd": fair["equalized_odds_diff"],
         "fairness_metrics": fair,
     }
+
+@torch.no_grad()
+def evaluate(model, loader, device):
+    """返回 group accuracy 指标 + 公平性指标（WGA / EqOdd）。"""
+    preds, targets, sensitives = collect_predictions(model, loader, device)
+    return compute_metrics_from_predictions(preds, targets, sensitives)
 
 
 def main():
