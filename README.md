@@ -143,6 +143,16 @@ $$\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{CE}} + \lambda \cdot \mathcal{
 
 ![Mouth × Smiling — per-group accuracy with bootstrap 95% CI](outputs/bootstrap_mouthopen_smiling_acc.png)
 
+### Bootstrap CI gap (Task 0 & Task 3)
+
+#### Task 0 — Blond Hair × Male
+
+![Task 0 Blond — bootstrap CI gap vs baseline](outputs/Plot_CI_Gap_Task_0_%28Blond%29.png)
+
+#### Task 3 — Mouth_Slightly_Open × Smiling
+
+![Task 3 Mouth Open — bootstrap CI gap vs baseline](outputs/Plot_CI_Gap_Task_3_%28Mouth_Open%29.png)
+
 ### Training Curves
 
 #### BlondHair × Male
